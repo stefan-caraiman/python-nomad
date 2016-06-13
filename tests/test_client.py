@@ -1,10 +1,9 @@
 import pytest
 import tests.common as common
 import nomad
+import nomad.api.exceptions
 import json
-import time
-import requests
-
+import responses
 
 @pytest.fixture
 def nomad_setup():
@@ -72,3 +71,48 @@ def test_dunder_getattr(nomad_setup):
 
     with pytest.raises(AttributeError):
         d = nomad_setup.client.stat.does_not_exist
+
+
+# Mocking tests
+@responses.activate
+def test_mock_client_ls_not_found(nomad_setup):
+    responses.add(responses.GET,
+                  "http://{0}:{1}/v1/client/fs/ls/NOT-A-REAL-ALLOCATION-ID".format(common.IP,common.NOMAD_PORT),
+                  status=500,
+                  content_type="text/plain")
+
+    with pytest.raises(nomad.api.exceptions.URLNotFoundNomadException):
+        nomad_setup.client.ls.list_files("NOT-A-REAL-ALLOCATION-ID")
+
+@responses.activate
+def test_mock_client_ls_found(nomad_setup):
+    responses.add(responses.GET,
+                  "http://{0}:{1}/v1/client/fs/ls/REAL-ALLOCATION-ID".format(common.IP,common.NOMAD_PORT),
+                  status=200,
+                  content_type="application/json",
+                  body=common.CLIENT_LS)
+
+
+    isinstance(nomad_setup.client.ls.list_files("REAL-ALLOCATION-ID"),list)
+
+
+@responses.activate
+def test_mock_client_stat_not_found(nomad_setup):
+    responses.add(responses.GET,
+                  "http://{0}:{1}/v1/client/fs/stat/NOT-A-REAL-ALLOCATION-ID".format(common.IP,common.NOMAD_PORT),
+                  status=500,
+                  content_type="text/plain")
+
+    with pytest.raises(nomad.api.exceptions.URLNotFoundNomadException):
+        nomad_setup.client.stat.stat_file("NOT-A-REAL-ALLOCATION-ID")
+
+@responses.activate
+def test_mock_client_stat_found(nomad_setup):
+    responses.add(responses.GET,
+                  "http://{0}:{1}/v1/client/fs/stat/REAL-ALLOCATION-ID".format(common.IP,common.NOMAD_PORT),
+                  status=200,
+                  content_type="application/json",
+                  body=common.CLIENT_STAT)
+
+
+    isinstance(nomad_setup.client.stat.stat_file("REAL-ALLOCATION-ID"),dict)
