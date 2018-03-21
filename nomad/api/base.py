@@ -7,9 +7,12 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class Requester(object):
 
-    def __init__(self, address=None, uri='http://127.0.0.1', port=4646, namespace=None, token=None, timeout=5, version='v1', verify=False, cert=()):
+    def __init__(self, address=None, uri='http://127.0.0.1', port=4646,
+                 namespace=None, token=None, timeout=5,
+                 version='v1', verify=False, cert=(), region=None):
         self.uri = uri
         self.port = port
+        self.region = region
         self.namespace = namespace
         self.token = token
         self.timeout = timeout
@@ -56,6 +59,10 @@ class Requester(object):
                 url = "{url}?namespace={namespace}".format(
                            url=url,
                            namespace=self.namespace)
+        if self.region:
+            url = "{url}?region={region}".format(
+                           url=url,
+                           region=self.region)
         return url
 
 
